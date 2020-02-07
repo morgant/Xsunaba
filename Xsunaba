@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# X11 application sandbox
+# Originally based on http://blog.sleeplessbeastie.eu/2013/07/19/how-to-create-browser-sandbox/
+
+# display used to show browser
+XSUNABA_DISPLAY=":32"
+
+# sandbox user
+XSUNABA_USER="xsunaba"
+
+# authentication cookie
+XSUNABA_MCOOKIE=`openssl rand -hex 16`
+
+# authentication file
+XSUNABA_XAUTH="$HOME/.Xauthority-xsunaba"
+
+# local X11 sockets, used to determine if application is running
+LOCAL_SOCKETS="/tmp/.X11-unix"
+
+# window width and height
+WIDTH=1024
+HEIGHT=768
+
+# application to start
+# width and height are raised above window dimensions to occupy full window
+APPLICATION="$@" # -geometry $(expr $WIDTH + 1)x$(expr $HEIGHT + 1)"
+
+# clear authentication files
+clear_auth_files() {
+  # clear authentication file
+  if [ -e $XSUNABA_XAUTH ]; then
+    rm $XSUNABA_XAUTH
+  fi
+
+  # create empty file
+  touch $XSUNABA_XAUTH
+
+  # clear authentication file for XSUNABA_USER
+  if [ -e /home/$XSUNABA_USER/.Xauthority ]; then
+    doas -u $XSUNABA_USER rm /home/$XSUNABA_USER/.Xauthority 
+  fi
+  doas -u $XSUNABA_USER touch /home/$XSUNABA_USER/.Xauthority
+}
+
+if [ ! -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; then
+  # display is not active
+
+  # clear stalled authentication files
+  clear_auth_files
+
+  # store authentication cookie for chosen display
+  xauth -f ${XSUNABA_XAUTH} add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
+  doas -u $XSUNABA_USER xauth add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
+
+  # start Xephyr and application
+  Xephyr -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
+  sleep 1
+  DISPLAY=$XSUNABA_DISPLAY doas -u $XSUNABA_USER $APPLICATION
+
+  # clear authentication files after session is closed
+  # do not start application in the background to use this function
+  clear_auth_files
+else
+  # display is active so application is already running
+  # show simple error message
+  if [ -n "$(which kdialog)" ]; then
+    kdialog --error "Application is already running.<br/>Display ${XSUNABA_DISPLAY#:} is active."
+  fi
+fi
