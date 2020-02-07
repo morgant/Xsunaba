@@ -24,7 +24,7 @@ This is based on [a script by Milosz Galazka](https://blog.sleeplessbeastie.eu/2
 
 2. Add an entry to your `/etc/doas.conf` allowing your user passwordless access to the `xsunaba` user (replacing `<USER>` with your username):
 
-        permit nopass keepenv <USER> as xsunaba
+        permit nopass setenv {DISPLAY} <USER> as xsunaba
 
 3. Prefix your X11 application command with `Xsunaba`, for example:
 
