@@ -64,7 +64,7 @@ if [ ! -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; then
 else
   # display is active so application is already running
   # show simple error message
-  if [ -n "$(which kdialog)" ]; then
-    kdialog --error "Application is already running.<br/>Display ${XSUNABA_DISPLAY#:} is active."
+  if [ -n "$(which xmessage)" ]; then
+    xmessage -buttons OK -center "Application is already running. Display ${XSUNABA_DISPLAY#:} is active."
   fi
 fi
