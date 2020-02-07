@@ -20,19 +20,19 @@ This is based on [a script by Milosz Galazka](https://blog.sleeplessbeastie.eu/2
 
 1. Add a `xsunaba` user:
 
-    doas useradd -m xsunaba
+        doas useradd -m xsunaba
 
 2. Add an entry to your `/etc/doas.conf` allowing your user passwordless access to the `xsunaba` user (replacing `<USER>` with your username):
 
-    permit nopass keepenv <USER> as xsunaba
+        permit nopass keepenv <USER> as xsunaba
 
 3. Prefix your X11 application command with `Xsunaba`, for example:
 
-    Xsunaba chrome --window-size=1024,768 --window-position=0,0 --incognito &
+        Xsunaba chrome --window-size=1024,768 --window-position=0,0 --incognito &
 
-    Xsunaba firefox -width 1024 -height 768 --private-window &
+        Xsunaba firefox -width 1024 -height 768 --private-window &
 
 ## LICENSE
 
-Copyright (c) 2020 Morgan T. Aldridge
+Copyright (c) 2020 Morgan T. Aldridge  
 Copyright (c) 2013 Milosz Galazka
