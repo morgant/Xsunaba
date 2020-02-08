@@ -56,7 +56,7 @@ if [ ! -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; then
   # start Xephyr and application
   Xephyr -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
   sleep 1
-  DISPLAY=$XSUNABA_DISPLAY doas -u $XSUNABA_USER $APPLICATION
+  doas -u $XSUNABA_USER env DISPLAY=$XSUNABA_DISPLAY $APPLICATION
 
   # clear authentication files after session is closed
   # do not start application in the background to use this function
