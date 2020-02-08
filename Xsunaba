@@ -26,28 +26,8 @@ HEIGHT=768
 # width and height are raised above window dimensions to occupy full window
 APPLICATION="$@" # -geometry $(expr $WIDTH + 1)x$(expr $HEIGHT + 1)"
 
-# clear authentication files
-clear_auth_files() {
-  # clear authentication file
-  if [ -e $XSUNABA_XAUTH ]; then
-    rm $XSUNABA_XAUTH
-  fi
-
-  # create empty file
-  touch $XSUNABA_XAUTH
-
-  # clear authentication file for XSUNABA_USER
-  if [ -e /home/$XSUNABA_USER/.Xauthority ]; then
-    doas -u $XSUNABA_USER rm /home/$XSUNABA_USER/.Xauthority 
-  fi
-  doas -u $XSUNABA_USER touch /home/$XSUNABA_USER/.Xauthority
-}
-
 if [ ! -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; then
   # display is not active
-
-  # clear stalled authentication files
-  clear_auth_files
 
   # store authentication cookie for chosen display
   xauth -f ${XSUNABA_XAUTH} add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
@@ -55,12 +35,18 @@ if [ ! -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; then
 
   # start Xephyr and application
   Xephyr -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
+  XSUNABA_XEPHYR_PID=$!
   sleep 1
   doas -u $XSUNABA_USER env DISPLAY=$XSUNABA_DISPLAY $APPLICATION
 
-  # clear authentication files after session is closed
-  # do not start application in the background to use this function
-  clear_auth_files
+  # stop Xephyr
+  if ps -p $XSUNABA_XEPHYR_PID >/dev/null; then
+    kill $XSUNABA_XEPHYR_PID
+  fi
+
+  # clear authentication cookie after session is closed
+  xauth -f $XSUNABA_XAUTH remove $XSUNABA_DISPLAY
+  doas -u $XSUNABA_USER xauth remove $XSUNABA_DISPLAY
 else
   # display is active so application is already running
   # show simple error message
