@@ -26,31 +26,27 @@ HEIGHT=768
 # width and height are raised above window dimensions to occupy full window
 APPLICATION="$@" # -geometry $(expr $WIDTH + 1)x$(expr $HEIGHT + 1)"
 
-if [ ! -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; then
-  # display is not active
+# find an unused display for Xephyr
+while [ -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; do
+  echo "Display ${XSUNABA_DISPLAY#:} is in use. Looking for an unused display..."
+  XSUNABA_DISPLAY=":$(expr ${XSUNABA_DISPLAY#:} + 1)"
+done
 
-  # store authentication cookie for chosen display
-  xauth -f ${XSUNABA_XAUTH} add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
-  doas -u $XSUNABA_USER xauth add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
+# store authentication cookie for chosen display
+xauth -f ${XSUNABA_XAUTH} add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
+doas -u $XSUNABA_USER xauth add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
 
-  # start Xephyr and application
-  Xephyr -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
-  XSUNABA_XEPHYR_PID=$!
-  sleep 1
-  doas -u $XSUNABA_USER env DISPLAY=$XSUNABA_DISPLAY $APPLICATION
+# start Xephyr and application
+Xephyr -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
+XSUNABA_XEPHYR_PID=$!
+sleep 1
+doas -u $XSUNABA_USER env DISPLAY=$XSUNABA_DISPLAY $APPLICATION
 
-  # stop Xephyr
-  if ps -p $XSUNABA_XEPHYR_PID >/dev/null; then
-    kill $XSUNABA_XEPHYR_PID
-  fi
-
-  # clear authentication cookie after session is closed
-  xauth -f $XSUNABA_XAUTH remove $XSUNABA_DISPLAY
-  doas -u $XSUNABA_USER xauth remove $XSUNABA_DISPLAY
-else
-  # display is active so application is already running
-  # show simple error message
-  if [ -n "$(which xmessage)" ]; then
-    xmessage -buttons OK -center "Application is already running. Display ${XSUNABA_DISPLAY#:} is active."
-  fi
+# stop Xephyr
+if ps -p $XSUNABA_XEPHYR_PID >/dev/null; then
+  kill $XSUNABA_XEPHYR_PID
 fi
+
+# clear authentication cookie after session is closed
+xauth -f $XSUNABA_XAUTH remove $XSUNABA_DISPLAY
+doas -u $XSUNABA_USER xauth remove $XSUNABA_DISPLAY
