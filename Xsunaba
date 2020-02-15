@@ -3,6 +3,8 @@
 # X11 application sandbox
 # Originally based on http://blog.sleeplessbeastie.eu/2013/07/19/how-to-create-browser-sandbox/
 
+VERBOSE="true"
+
 # display used to show browser
 XSUNABA_DISPLAY=":32"
 
@@ -25,7 +27,7 @@ HEIGHT=768
 # application to start
 # width and height are raised above window dimensions to occupy full window
 APPLICATION="$@" # -geometry $(expr $WIDTH + 1)x$(expr $HEIGHT + 1)"
-echo "Checking for window geometry hacks for '$(basename "$1")'..."
+if $VERBOSE; then echo "Checking for window geometry hacks for '$(basename "$1")'..."; fi
 case "$(basename "$1")" in
   "chrome")
     APPLICATION="${APPLICATION} -window-size=${WIDTH},${HEIGHT} --window-position=0,0"
@@ -37,7 +39,7 @@ esac
 
 # find an unused display for Xephyr
 while [ -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; do
-  echo "Display ${XSUNABA_DISPLAY#:} is in use. Looking for an unused display..."
+  if $VERBOSE; then echo "Display ${XSUNABA_DISPLAY#:} is in use. Looking for an unused display..."; fi
   XSUNABA_DISPLAY=":$(expr ${XSUNABA_DISPLAY#:} + 1)"
 done
 
@@ -49,7 +51,7 @@ doas -u $XSUNABA_USER xauth add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
 Xephyr -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
 XSUNABA_XEPHYR_PID=$!
 sleep 1
-echo "Launching '${APPLICATION}' on display ${XSUNABA_DISPLAY}..."
+if $VERBOSE; then echo "Launching '${APPLICATION}' on display ${XSUNABA_DISPLAY}..."; fi
 doas -u $XSUNABA_USER env DISPLAY=$XSUNABA_DISPLAY $APPLICATION
 
 # stop Xephyr
