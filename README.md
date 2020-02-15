@@ -28,9 +28,21 @@ This is based on [a script by Milosz Galazka](https://blog.sleeplessbeastie.eu/2
 
 3. Prefix your X11 application command with `Xsunaba`, for example:
 
-        Xsunaba chrome --window-size=1024,768 --window-position=0,0 --incognito &
+        Xsunaba chrome --incognito &
 
-        Xsunaba firefox -width 1024 -height 768 --private-window &
+        Xsunaba firefox --private-window &
+
+_Note:_ `Xsunaba` will automatically apply window geometry hacks to fit to the `Xephyr` display for the following X11 applications: `chrome`, and `firefox`.
+
+### ADVANCED USAGE
+
+The following environment variables may be set the change `Xsunaba`'s behavior:
+
+* `VERBOSE`: Set to `true` to show verbose output. Default: `false`.
+* `XSUNABA_DISPLAY`: Set a custom display number (incl. leading colon) to start `Xephyr` displays at. Default: `:32`.
+* `XSUNABA_USER`: Set a username to run X11 application as. Default: `xsunaba`.
+* `WIDTH`: Set a custom `Xephyr` display width in pixels. Default: `1024`.
+* `HEIGHT`: Set a custom `Xephyr` display height in pixels. Default: `768`.
 
 ## LICENSE
 
