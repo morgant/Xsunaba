@@ -46,5 +46,4 @@ The following environment variables may be set the change `Xsunaba`'s behavior:
 
 ## LICENSE
 
-Copyright (c) 2020 Morgan T. Aldridge  
-Copyright (c) 2013 Milosz Galazka
+Released under the [MIT License](LICENSE) by permission.
