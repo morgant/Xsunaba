@@ -6,7 +6,7 @@ A utility to run X11 applications in a sandbox (sunaba). The sandbox consists of
 
 _Note:_ this _does not_ guarantee access is prevented outside the sandbox user & display, but does  limit access to your primary user & display.
 
-This is based on [a script by Milosz Galazka](https://blog.sleeplessbeastie.eu/2013/07/19/how-to-create-browser-sandbox/) and ported to [OpenBSD](http://www.openbsd.org/).
+This is based on [a script by Milosz Galazka](https://blog.sleeplessbeastie.eu/2013/07/19/how-to-create-browser-sandbox/) (see [Internet Archive's Wayback Machine archive](https://web.archive.org/web/20210115000000*/https://blog.sleeplessbeastie.eu/2013/07/19/how-to-create-browser-sandbox/)) and ported to [OpenBSD](http://www.openbsd.org/).
 
 ## PREREQUISITES
 
