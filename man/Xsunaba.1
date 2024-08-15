@@ -1,0 +1,68 @@
+.Dd $Mdocdate: August 14 2024 $
+.Dt XSUNABA 1
+.Os
+.Sh NAME
+.Nm Xsunaba
+.Nd execute X applications in a sandboxed X display
+.Sh SYNOPSIS
+.Nm
+.Bk -words
+.Op Ar command Op Ar argument ...
+.Ek
+.Sh DESCRIPTION
+The 
+.Nm
+utility provides a rudimentary sandboxed environment, both user and 
+.Xr X 7
+session, to run an X application in. The intent is to limit access to the user's own files and prevent the X application from accessing 
+.Xr XEvents 3
+events destined for other applications, especially keyboard input.
+.Pp
+IMPORTANT: 
+.Nm
+is really a proof of concept and in no way guarantees that it will actually prevent access to your data!
+.Pp
+.Sh ENVIRONENT
+The following environment variables affect 
+.Nm
+behavior:
+.Pp
+.Bl -tag -width "POSIXLY_CORRECT"
+.It Ev VERBOSE
+Shows verbose output if set to 'true', otherwise supress verbose output.
+.It XSUNABA_DISPLAY
+The
+.Xr X 7
+display to start
+.Xr Xephyr 1
+displays on.
+.It XSUNABA_USER
+Username to run
+.Xr X 7
+application as. If unset, the
+.Cm xsunaba
+user will be used.
+.It WIDTH
+The width to use for the
+.Xr Xephyr 1
+display resolution. If unset, a default width of 1024 will be used.
+.It HEIGHT
+The height to use for the
+.Xr Xephyr 1
+display resolution. If unset, a default height of 768 will be used.
+.El
+.Pp
+.Sh EXAMPLES
+Open a
+.Xr firefox 1
+private browser window in a sandboxed display:
+.Pp
+.Dl $ Xsunaba firefox --private-window
+.Pp
+.Sh SEE ALSO
+.Xr doas 1
+.Xr openssl 1
+.Xr X 7
+.Xr xauth 1
+.Xr Xephyr 1
+.Xr XEvents 3
