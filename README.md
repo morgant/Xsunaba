@@ -22,6 +22,10 @@ For those using Xsunaba under OpenBSD, some X11 applications in ports utilize th
 * [xauth(1)](https://man.openbsd.org/xauth)
 * [openssl(1)](https://man.openbsd.org/openssl)
 
+### Optional
+
+* [sndio(7)](https://man.openbsd.org/sndio)
+
 ## USAGE
 
 1. Add an `xsunaba` user:
@@ -42,7 +46,7 @@ _Note:_ `Xsunaba` will automatically apply window geometry hacks to fit to the `
 
 ### ADVANCED USAGE
 
-The following environment variables may be set the change `Xsunaba`'s behavior:
+The following environment variables may be set to change `Xsunaba`'s behavior:
 
 * `VERBOSE`: Set to `true` to show verbose output. Default: `false`.
 * `XSUNABA_DISPLAY`: Set a custom display number (incl. leading colon) to start `Xephyr` displays at. Default: `:32`.
@@ -55,6 +59,17 @@ The following environment variables may be set the change `Xsunaba`'s behavior:
 If you want to share some files beween your user and the `xsunaba` user, it is suggested that you create a directory owned by the `xsunaba` user and grant group access to it to your user's group (generally the same as your user's name). It is best to only move specific files into and out of this shared directory as needed, not permanently store data in it, as any X11 application run using `Xsunaba` will have access to it.
 
 *IMPORTANT:* This will weaken the security of your sandbox!
+
+### Audio
+
+By default, X11 applications executed in the Xsunaba sandbox will not have access to play or record audio for privacy reasons. Per the ['Authentication' section in sndio(7)](https://man.openbsd.org/sndio#Authentication), one can copy their `~/.sndio/cookie` file to the `xsunaba` user to allow it to access [sndiod(8)](https://man.openbsd.org/sndiod) simultaneously:
+
+```
+doas -u xsunaba mkdir -p ~xsunaba/.sndio
+doas cp $HOME/.sndio/cookie ~xsunaba/.sndio/
+doas chown xsunaba:xsunaba ~xsunaba/.sndio/cookie
+doas chmod 600 ~xsunaba/.sndio/cookie
+```
 
 ## LICENSE
 
