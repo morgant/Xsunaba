@@ -26,17 +26,23 @@ For those using Xsunaba under OpenBSD, some X11 applications in ports utilize th
 
 * [sndio(7)](https://man.openbsd.org/sndio)
 
+## INSTALLATION
+
+To install `Xsunaba`, the manual page, create the `xsunaba` user, and update your `/etc/doas.conf` to allow your user to run applications in the sandbox without a password:
+
+```
+$ doas make install USER="$USER"
+```
+
+If you don't yet have an `/etc/doas.conf`, one will be created for you, but you will need explicitly specify your username when running `make install` as `root` (replacing `<username>` with your username):
+
+```
+# make install USER=<username>
+```
+
 ## USAGE
 
-1. Add an `xsunaba` user:
-
-        doas useradd -m xsunaba
-
-2. Add an entry to your `/etc/doas.conf` allowing your user passwordless access to the `xsunaba` user (replacing `<USER>` with your username):
-
-        permit nopass <USER> as xsunaba
-
-3. Prefix your X11 application command with `Xsunaba`, for example:
+Prefix your X11 application command with `Xsunaba`, for example:
 
         Xsunaba chrome --incognito &
 
@@ -54,13 +60,30 @@ The following environment variables may be set to change `Xsunaba`'s behavior:
 * `WIDTH`: Set a custom `Xephyr` display width in pixels. Default: `1024`.
 * `HEIGHT`: Set a custom `Xephyr` display height in pixels. Default: `768`.
 
-### Shared Files
+#### Alternate and/or Multiple Sandbox Users
+
+If you would like your sandbox user to have a different username than `xsunaba` or would like to create multiple sandbox users, you can create them 
+as follows (replacing `<sandbox_user>` with your preferred sandbox username):
+
+```
+doas make install-user XSUNABA_USER=<sandbox_user>
+doas make install-doas XSUNABA_USER=<sandbox_user> USER=$USER
+```
+
+You can then execute `Xsunaba` with your custom sandbox user, for example (replacing `<sandbox_user>`):
+
+```
+XSUNABA_USER=<sandbox_user> Xsunaba firefox --private-window &
+```
+```
+
+#### Shared Files
 
 If you want to share some files beween your user and the `xsunaba` user, it is suggested that you create a directory owned by the `xsunaba` user and grant group access to it to your user's group (generally the same as your user's name). It is best to only move specific files into and out of this shared directory as needed, not permanently store data in it, as any X11 application run using `Xsunaba` will have access to it.
 
 *IMPORTANT:* This will weaken the security of your sandbox!
 
-### Audio
+#### Audio
 
 By default, X11 applications executed in the Xsunaba sandbox will not have access to play or record audio for privacy reasons. Per the ['Authentication' section in sndio(7)](https://man.openbsd.org/sndio#Authentication), one can copy their `~/.sndio/cookie` file to the `xsunaba` user to allow it to access [sndiod(8)](https://man.openbsd.org/sndiod) simultaneously:
 
@@ -70,6 +93,14 @@ doas cp $HOME/.sndio/cookie ~xsunaba/.sndio/
 doas chown xsunaba:xsunaba ~xsunaba/.sndio/cookie
 doas chmod 600 ~xsunaba/.sndio/cookie
 ```
+
+The Makefile also provides an `install-sndio-cookie` target to automate this:
+
+```
+doas make install-sndio-cookie USER=$USER
+```
+
+*IMPORTANT:* If you have enabled audio recording in the OpenBSD kernel using [sysctl(8)](https://man.openbsd.org/sysctl) or [sysctl.conf(5)](https://man.openbsd.org/sysctl.conf) (`kern.audio.record=1`), applications run in the sandbox will be able to access your microphone.
 
 ## LICENSE
 
