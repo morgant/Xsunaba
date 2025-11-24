@@ -7,7 +7,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2020 Morgan Aldridge
+# Copyright (c) 2020-2025 Morgan Aldridge
 # Copyright (c) 2013 Milosz Galazka
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,7 +31,8 @@
 
 VERBOSE="${VERBOSE:=false}"
 
-# display used to show browser
+# X displays (host and sandbox)
+DISPLAY="${DISPLAY}"
 XSUNABA_DISPLAY="${XSUNABA_DISPLAY:=:32}"
 
 # sandbox user
@@ -50,10 +51,45 @@ LOCAL_SOCKETS="/tmp/.X11-unix"
 WIDTH="${WIDTH:=1024}"
 HEIGHT="${HEIGHT:=768}"
 
+# print basic help
+usage() {
+  printf "Usage: %s [-hvrG] [-d display] [-s dimensions] [[-l] -u user] [...]\n" "$(basename "$0")"
+}
+
+# parse options
+while getopts :d:Ghlrs:u:v _opt; do
+  case "$_opt" in
+    d) DISPLAY="$OPTARG" ;;
+    G) XSUNABA_XEPHYR_OPTS="${XSUNABA_XEPHYR_OPTS} -no-host-grab" ;;
+    h) usage && exit ;;
+    l) printf "%s: the '-%s' option is not yet implemented.\n" "$(basename "$0")" "$_opt" >&2 && exit 2 ;;
+    r) XSUNABA_XEPHYR_OPTS="${XSUNABA_XEPHYR_OPTS} -resizeable" ;;
+    s)
+      WIDTH="${OPTARG%%x*}"
+      HEIGHT="${OPTARG##*x}"
+      ;;
+    u)
+      XSUNABA_USER="$OPTARG"
+      [ -z "$XSUNABA_USER" ] && printf "%s: the '-%s' option was missing the required username parameter!\n" "$(basename "$0")" "$_opt" >&2 && exit 2
+      ;;
+    v) VERBOSE=true ;;
+    ?) printf "%s: unknown option '-%s'!\n" "$(basename "$0")" "$OPTARG" >&2 && usage && exit 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+# validate input
+if [ -z "$WIDTH" ] || [ "$WIDTH" -le 0 ] ; then
+  printf "%s: invalid screen width '%s'!\n" "$(basename "$0")" "$WIDTH" >&2 && exit 1
+fi
+if [ -z "$HEIGHT" ] || [ "$HEIGHT" -le 0 ] ; then
+  printf "%s: invalid screen height '%s'!\n" "$(basename "$0")" "$HEIGHT" >&2 && exit 1
+fi
+
 # application to start
 # width and height are raised above window dimensions to occupy full window
 APPLICATION="$@" # -geometry $(expr $WIDTH + 1)x$(expr $HEIGHT + 1)"
-if $VERBOSE; then echo "Checking for window geometry hacks for '$(basename "$1")'..."; fi
+$VERBOSE && echo "Checking for window geometry hacks for '$(basename "$1")'..."
 case "$(basename "$1")" in
   "chrome")
     APPLICATION="${APPLICATION} -window-size=${WIDTH},${HEIGHT} --window-position=0,0"
@@ -65,7 +101,7 @@ esac
 
 # find an unused display for Xephyr
 while [ -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; do
-  if $VERBOSE; then echo "Display ${XSUNABA_DISPLAY#:} is in use. Looking for an unused display..."; fi
+  $VERBOSE && echo "Display ${XSUNABA_DISPLAY#:} is in use. Looking for an unused display..."
   XSUNABA_DISPLAY=":$(expr ${XSUNABA_DISPLAY#:} + 1)"
 done
 
@@ -74,10 +110,10 @@ xauth -f ${XSUNABA_XAUTH} add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
 doas -u $XSUNABA_USER xauth add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
 
 # start Xephyr and application
-Xephyr -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
+DISPLAY=$DISPLAY Xephyr ${XSUNABA_XEPHYR_OPTS} -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
 XSUNABA_XEPHYR_PID=$!
 sleep 1
-if $VERBOSE; then echo "Launching '${APPLICATION}' on display ${XSUNABA_DISPLAY}..."; fi
+$VERBOSE && echo "Launching '${APPLICATION}' as '${XSUNABA_USER}' user on sandbox display ${XSUNABA_DISPLAY}..."
 doas -u $XSUNABA_USER env DISPLAY=$XSUNABA_DISPLAY $APPLICATION
 
 # stop Xephyr
