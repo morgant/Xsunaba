@@ -27,17 +27,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-VERBOSE="${VERBOSE:=false}"
+_tool="$(basename "$0")"
+VERBOSE="${VERBOSE:-false}"
 
 # X displays (host and sandbox)
-DISPLAY="${DISPLAY}"
-XSUNABA_DISPLAY="${XSUNABA_DISPLAY:=:32}"
+XSUNABA_DISPLAY="${XSUNABA_DISPLAY:-:32}"
 
 # sandbox user
-XSUNABA_USER="${XSUNABA_USER:=xsunaba}"
+XSUNABA_USER="${XSUNABA_USER:-xsunaba}"
 
 # authentication cookie
-XSUNABA_MCOOKIE=`openssl rand -hex 16`
+XSUNABA_MCOOKIE="$(openssl rand -hex 16)"
 
 # authentication file
 XSUNABA_XAUTH="$HOME/.Xauthority-xsunaba"
@@ -46,12 +46,18 @@ XSUNABA_XAUTH="$HOME/.Xauthority-xsunaba"
 LOCAL_SOCKETS="/tmp/.X11-unix"
 
 # window width and height
-WIDTH="${WIDTH:=1024}"
-HEIGHT="${HEIGHT:=768}"
+WIDTH="${WIDTH:-1024}"
+HEIGHT="${HEIGHT:-768}"
+
+# print to stdout and exit with an error code
+_fatal() {
+  printf "%s: %s! Exiting.\n" "$_tool" "$1" >&2
+  exit ${2:-1}
+}
 
 # print basic help
-usage() {
-  printf "Usage: %s [-hvrG] [-d display] [-s dimensions] [[-l] -u user] [...]\n" "$(basename "$0")"
+_usage() {
+  printf "Usage: %s [-hvrG] [-d display] [-s dimensions] [[-l] -u user] [...]\n" "$_tool"
 }
 
 # parse options
@@ -59,8 +65,8 @@ while getopts :d:Ghlrs:u:v _opt; do
   case "$_opt" in
     d) DISPLAY="$OPTARG" ;;
     G) XSUNABA_XEPHYR_OPTS="${XSUNABA_XEPHYR_OPTS} -no-host-grab" ;;
-    h) usage && exit ;;
-    l) printf "%s: the '-%s' option is not yet implemented.\n" "$(basename "$0")" "$_opt" >&2 && exit 2 ;;
+    h) _usage && exit ;;
+    l) _fatal "the '-${_opt}' option is not yet implemented." 2 ;;
     r) XSUNABA_XEPHYR_OPTS="${XSUNABA_XEPHYR_OPTS} -resizeable" ;;
     s)
       WIDTH="${OPTARG%%x*}"
@@ -68,27 +74,29 @@ while getopts :d:Ghlrs:u:v _opt; do
       ;;
     u)
       XSUNABA_USER="$OPTARG"
-      [ -z "$XSUNABA_USER" ] && printf "%s: the '-%s' option was missing the required username parameter!\n" "$(basename "$0")" "$_opt" >&2 && exit 2
+      [ -z "$XSUNABA_USER" ] && _fatal \
+        "the '-${_opt}' option was missing the required username parameter!" \
+        2
       ;;
     v) VERBOSE=true ;;
-    ?) printf "%s: unknown option '-%s'!\n" "$(basename "$0")" "$OPTARG" >&2 && usage && exit 2 ;;
+    ?) _fatal "unknown option '-${OPTARG}'!" 2 ;;
   esac
 done
 shift $((OPTIND - 1))
 
 # validate input
 if [ -z "$WIDTH" ] || [ "$WIDTH" -le 0 ] ; then
-  printf "%s: invalid screen width '%s'!\n" "$(basename "$0")" "$WIDTH" >&2 && exit 1
+  _fatal "invalid screen width '${WIDTH}'!"
 fi
 if [ -z "$HEIGHT" ] || [ "$HEIGHT" -le 0 ] ; then
-  printf "%s: invalid screen height '%s'!\n" "$(basename "$0")" "$HEIGHT" >&2 && exit 1
+  _fatal "invalid screen height '${HEIGHT}'!"
 fi
 
 # application to start
 # width and height are raised above window dimensions to occupy full window
 APPLICATION="$@" # -geometry $(expr $WIDTH + 1)x$(expr $HEIGHT + 1)"
-$VERBOSE && echo "Checking for window geometry hacks for '$(basename "$1")'..."
-case "$(basename "$1")" in
+$VERBOSE && echo "Checking for window geometry hacks for '$_tool'..."
+case "$_tool" in
   "chrome")
     APPLICATION="${APPLICATION} -window-size=${WIDTH},${HEIGHT} --window-position=0,0"
     ;;
@@ -103,12 +111,15 @@ while [ -e ${LOCAL_SOCKETS}/X${XSUNABA_DISPLAY#:} ]; do
   XSUNABA_DISPLAY=":$(expr ${XSUNABA_DISPLAY#:} + 1)"
 done
 
+# set environment variables
+export DISPLAY
+
 # store authentication cookie for chosen display
 xauth -f ${XSUNABA_XAUTH} add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
 doas -u $XSUNABA_USER xauth add ${XSUNABA_DISPLAY} . ${XSUNABA_MCOOKIE}
 
 # start Xephyr and application
-DISPLAY=$DISPLAY Xephyr ${XSUNABA_XEPHYR_OPTS} -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
+Xephyr ${XSUNABA_XEPHYR_OPTS} -auth ${XSUNABA_XAUTH} -screen ${WIDTH}x${HEIGHT} -br -nolisten tcp $XSUNABA_DISPLAY &
 XSUNABA_XEPHYR_PID=$!
 sleep 1
 $VERBOSE && echo "Launching '${APPLICATION}' as '${XSUNABA_USER}' user on sandbox display ${XSUNABA_DISPLAY}..."
